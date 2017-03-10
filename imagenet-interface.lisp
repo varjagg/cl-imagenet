@@ -13,7 +13,7 @@
 
 (defparameter *display-channel* (trivial-channels:make-channel))
 
-(defconstant +sc-nprocessors-onln+ 84)
+(define-constant +sc-nprocessors-onln+ 84)
 
 ;;; courtesy _Common_Lisp_Recipes_ by Edi Weitz
 (cffi:defcfun "sysconf" :long (name :int))

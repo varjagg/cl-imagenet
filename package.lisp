@@ -1,2 +1,2 @@
-(defpackage #:dd-imagenet
+(defpackage #:cl-imagenet
   (:use :cl))

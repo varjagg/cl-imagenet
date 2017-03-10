@@ -1,2 +1,3 @@
 (defpackage #:cl-imagenet
-  (:use :cl))
+  (:use #:cl)
+  (:nicknames #:imagenet))

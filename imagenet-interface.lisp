@@ -14,12 +14,12 @@
 (defparameter *display-channel* (trivial-channels:make-channel))
 
 (defconstant +sc-nprocessors-onln+ 84)
-(defconstant +default-process-number+ 4)
+(defconstant +default-processor-count+ 4)
 
 ;;; courtesy _Common_Lisp_Recipes_ by Edi Weitz
 #+cffi(cffi:defcfun "sysconf" :long (name :int))
 (defun get-number-of-processors ()
-  (or #+cffi(sysconf +sc-nprocessors-onln+) +default-process-number+))
+  (or #+cffi(sysconf +sc-nprocessors-onln+) +default-processor-count+))
 
 (defmethod run-display (width height)
   (bt:make-thread 

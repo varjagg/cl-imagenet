@@ -38,13 +38,13 @@
 					   :height height :width width)))
 	   (unwind-protect
 		(progn
-		  (setf (xlib:wm-name window) "Processed Image")
+		  (setf (xlib:wm-name window) "Processed Images")
 		  (xlib:map-window window)
+		  (xlib:clear-area window width height)
 		  (loop for src = (opticl:fit-image-into (trivial-channels:recvmsg *display-channel*) :y-max +pane-h+ :x-max +pane-w+)
 		     with quit = nil until quit 
 		     for xp = (random (/ width +pane-w+))
 		     for yp = (random (/ height +pane-h+)) do
-		       (xlib:clear-area window)
 		       (opticl:with-image-bounds (h w) src
 			 (loop for i from 0 repeat h do
 			      (loop for j from 0 repeat w

@@ -39,13 +39,15 @@
 		  (setf (xlib:wm-name window) "Processed Image")
 		  (xlib:map-window window)
 		  (loop for src = (opticl:fit-image-into (trivial-channels:recvmsg *display-channel*) :y-max height :x-max width)
-		     with quit = nil until quit do
+		     with quit = nil until quit 
+		     for xp = (random (1- (/ width 80)))
+		     for yp = (random (1- (/ height 60))) do
 		       (xlib:clear-area window)
 		       (opticl:with-image-bounds (h w) src
-			 (loop for i from 0 below h do
-			      (loop for j from 0 below w
+			 (loop for i from 0 repeat h do
+			      (loop for j from 0 repeat w
 				 for spos = (* 3 (+ j (* width i))) do
-				   (setf (aref buffer i j)
+				   (setf (aref buffer (+ i (* yp 60)) (+ j (* xp 80)))
 					 (logior (ash (opticl:pixel src i j) 16) (ash (opticl:pixel src i j) 8) (opticl:pixel src i j)))))
 			 (xlib:put-image pixmap pixmap-gc image :width w :height h :x 0 :y 0)
 			 (xlib:copy-area pixmap gc 0 0 w h window 0 0))

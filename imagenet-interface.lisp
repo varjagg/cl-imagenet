@@ -38,7 +38,7 @@
 		(progn
 		  (setf (xlib:wm-name window) "Processed Image")
 		  (xlib:map-window window)
-		  (loop for src = (opticl:fit-image-into (trivial-channels:recvmsg *display-channel*) :y-max (1- height) :x-max (1- width))
+		  (loop for src = (opticl:fit-image-into (trivial-channels:recvmsg *display-channel*) :y-max height :x-max width)
 		     with quit = nil until quit do
 		       (xlib:clear-area window)
 		       (opticl:with-image-bounds (h w) src

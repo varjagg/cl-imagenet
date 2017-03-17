@@ -38,7 +38,7 @@
 		(progn
 		  (setf (xlib:wm-name window) "Processed Image")
 		  (xlib:map-window window)
-		  (loop for src = (trivial-channels:recvmsg *display-channel*)
+		  (loop for src = (opticl:fit-image-into (trivial-channels:recvmsg *display-channel*) :y-max (1- height) :x-max (1- width))
 		     with quit = nil until quit do
 		       (xlib:clear-area window)
 		       (opticl:with-image-bounds (h w) src
@@ -75,9 +75,6 @@
 
 (defun process (image bbox-annotation)
   ;; edge-detect and process
-  #+nil(bt:with-lock-held (*write-lock*)
-	 (opticl:write-pbm-file (concatenate 'string "/tmp/contours/" (getf bbox-annotation 'name) ".pgm")
-			   (opticl:min-error-threshold-image (opticl:edge-detect-image image))))
   (trivial-channels:sendmsg *display-channel* (opticl:edge-detect-image image)))
 
 (defun read-imagenet-annotation-file (pathname)
@@ -150,7 +147,7 @@
 	*processed-count* 0
 	*unreadable-count* 0)
   (let ((annodirs (directory spec)))
-    (run-display 1024 768)
+    (run-display 800 600)
     (loop repeat (get-number-of-processors)
        do (funcall;;(bt:make-thread
 	   #'(lambda ()

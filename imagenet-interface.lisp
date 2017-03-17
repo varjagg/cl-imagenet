@@ -40,8 +40,10 @@
 		(progn
 		  (setf (xlib:wm-name window) "Processed Images")
 		  (xlib:map-window window)
-		  (xlib:clear-area window width height)
-		  (loop for src = (opticl:fit-image-into (trivial-channels:recvmsg *display-channel*) :y-max +pane-h+ :x-max +pane-w+)
+		  (xlib:clear-area window :width width :height height)
+		  (loop for msg = (trivial-channels:recvmsg *display-channel*)
+		     while msg
+		     for src = (opticl:fit-image-into msg :y-max +pane-h+ :x-max +pane-w+)
 		     with quit = nil until quit 
 		     for xp = (random (/ width +pane-w+))
 		     for yp = (random (/ height +pane-h+)) do

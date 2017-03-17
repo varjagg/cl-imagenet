@@ -38,16 +38,17 @@
 		(progn
 		  (setf (xlib:wm-name window) "Processed Image")
 		  (xlib:map-window window)
-		  (xlib:clear-area window)
 		  (loop for src = (trivial-channels:recvmsg *display-channel*)
 		     with quit = nil until quit do
-		       (loop for i from 0 below height do
-			    (loop for j from 0 below width
-			       for spos = (* 3 (+ j (* width i))) do
-				 (setf (aref buffer i j)
-				       (logior (ash (opticl:pixel src i j) 16) (ash (opticl:pixel src i j) 8) (opticl:pixel src i j)))))
-		       (xlib:put-image pixmap pixmap-gc image :width width :height height :x 0 :y 0)
-		       (xlib:copy-area pixmap gc 0 0 width height window 0 0)
+		       (xlib:clear-area window)
+		       (opticl:with-image-bounds (h w) src
+			 (loop for i from 0 below h do
+			      (loop for j from 0 below w
+				 for spos = (* 3 (+ j (* width i))) do
+				   (setf (aref buffer i j)
+					 (logior (ash (opticl:pixel src i j) 16) (ash (opticl:pixel src i j) 8) (opticl:pixel src i j)))))
+			 (xlib:put-image pixmap pixmap-gc image :width w :height h :x 0 :y 0)
+			 (xlib:copy-area pixmap gc 0 0 w h window 0 0))
 		       (xlib:display-force-output display)
 		       (xlib:event-case (display :timeout 0)
 			 (:resize-request ()
@@ -149,7 +150,7 @@
 	*processed-count* 0
 	*unreadable-count* 0)
   (let ((annodirs (directory spec)))
-    (run-display 800 600)
+    (run-display 1024 768)
     (loop repeat (get-number-of-processors)
        do (funcall;;(bt:make-thread
 	   #'(lambda ()

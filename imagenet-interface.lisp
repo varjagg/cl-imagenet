@@ -153,7 +153,7 @@
 	*processed-count* 0
 	*unreadable-count* 0)
   (let ((annodirs (directory spec)))
-    (run-display 800 600)
+    (run-display (* 10 +pane-h+) (* 10 +pane-w+))
     (loop repeat (get-number-of-processors)
        do (funcall;;(bt:make-thread
 	   #'(lambda ()

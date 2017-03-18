@@ -11,8 +11,6 @@
 
 (defparameter *abort* nil)
 
-(defparameter *display-channel* (trivial-channels:make-channel))
-
 (defconstant +sc-nprocessors-onln+ 84)
 (defconstant +default-processor-count+ 4)
 
@@ -23,7 +21,7 @@
 (defun get-number-of-processors ()
   (or #+cffi(sysconf +sc-nprocessors-onln+) +default-processor-count+))
 
-(defmethod run-display (width height)
+(defun run-display (width height channel)
   (bt:make-thread 
    #'(lambda ()
        (let* ((display (xlib:open-default-display))
@@ -41,7 +39,7 @@
 		  (setf (xlib:wm-name window) "Processed Images")
 		  (xlib:map-window window)
 		  (xlib:clear-area window :width width :height height)
-		  (loop for msg = (trivial-channels:recvmsg *display-channel*)
+		  (loop for msg = (trivial-channels:recvmsg channel)
 		     while msg
 		     for src = (opticl:fit-image-into msg :y-max +pane-h+ :x-max +pane-w+)
 		     with quit = nil until quit 
@@ -77,11 +75,12 @@
    (buffer :accessor buffer :initarg :buffer :initform nil)
    (jpeg-descriptor :accessor jpeg-descriptor :initform (jpeg::make-descriptor))
    (luminance :accessor luminance :type opticl:8-bit-gray-image)
-   (anno-plist :accessor anno-plist)))
+   (anno-plist :accessor anno-plist)
+   (channel :reader channel :allocation :class :initform (trivial-channels:make-channel))))
 
 (defun process (image bbox-annotation)
   ;; edge-detect and process
-  (trivial-channels:sendmsg *display-channel* (opticl:edge-detect-image image)))
+  (opticl:edge-detect-image image))
 
 (defun read-imagenet-annotation-file (pathname)
   "Returns plist formed from parsing an annotation XML file"
@@ -132,8 +131,8 @@
 		 for ymax = (getf bbox 'ymax)
 		 for xmax = (getf bbox 'xmax)
 		 if (and (< -1 xmin xmax w) (< -1 ymin ymax h)) do
-		 ;; process the boundbox region
-		   (process (opticl:crop-image (luminance work) ymin xmin ymax xmax) bbox)
+		 ;; process the boundbox region and send for visualisation
+		   (trivial-channels:sendmsg (channel work) (process (opticl:crop-image (luminance work) ymin xmin ymax xmax) bbox))
 		   (bt:with-lock-held (*counters-lock*)
 		     (incf *processed-count*))
 		 else do
@@ -153,7 +152,7 @@
 	*processed-count* 0
 	*unreadable-count* 0)
   (let ((annodirs (directory spec)))
-    (run-display (* 10 +pane-h+) (* 10 +pane-w+))
+    (run-display (* 10 +pane-h+) (* 10 +pane-w+) (channel (make-instance 'work-instance)))
     (loop repeat (get-number-of-processors)
        do (funcall;;(bt:make-thread
 	   #'(lambda ()

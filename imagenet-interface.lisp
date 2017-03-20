@@ -14,8 +14,8 @@
 (defconstant +sc-nprocessors-onln+ 84)
 (defconstant +default-processor-count+ 4)
 
-(defconstant +pane-h+ 60)
-(defconstant +pane-w+ 80)
+(defconstant +tile-h+ 60)
+(defconstant +tile-w+ 80)
 
 #+cffi(cffi:defcfun "sysconf" :long (name :int)) ; courtesy _Common_Lisp_Recipes_ by Edi Weitz
 (defun get-number-of-processors ()
@@ -41,18 +41,18 @@
 		  (xlib:clear-area window :width width :height height)
 		  (loop for msg = (trivial-channels:recvmsg channel)
 		     while msg
-		     for src = (opticl:fit-image-into msg :y-max +pane-h+ :x-max +pane-w+)
+		     for src = (opticl:fit-image-into msg :y-max +tile-h+ :x-max +tile-w+)
 		     with quit = nil until quit 
-		     for xp = (random (/ width +pane-w+))
-		     for yp = (random (/ height +pane-h+)) do
+		     for xp = (* (random (floor width +tile-w+)) +tile-w+)
+		     for yp = (print (* (random (floor height +tile-h+)) +tile-h+)) do
 		       (opticl:with-image-bounds (h w) src
 			 (loop for i from 0 repeat h do
 			      (loop for j from 0 repeat w
 				 for spos = (* 3 (+ j (* width i))) do
-				   (setf (aref buffer (+ i (* yp +pane-h+)) (+ j (* xp +pane-w+)))
+				   (setf (aref buffer (+ i yp) (+ j xp))
 					 (logior (ash (opticl:pixel src i j) 16) (ash (opticl:pixel src i j) 8) (opticl:pixel src i j)))))
-			 (xlib:put-image pixmap pixmap-gc image :width w :height h :x 0 :y 0)
-			 (xlib:copy-area pixmap gc 0 0 w h window 0 0))
+			 (xlib:put-image pixmap pixmap-gc image :width width :height height :x 0 :y 0)
+			 (xlib:copy-area pixmap gc 0 0 width height window 0 0))
 		       (xlib:display-force-output display)
 		       (xlib:event-case (display :timeout 0)
 			 (:resize-request ()
@@ -64,7 +64,8 @@
 					    display
 					    (xlib:keycode->keysym display code 0))
 				       (#\q
-					(setf quit t)))
+					(setf quit t
+					      *abort* t)))
 				     t))))
 	     (xlib:free-pixmap pixmap)
 	     (xlib:free-gcontext gc)
@@ -130,6 +131,7 @@
 		 for ymin = (getf bbox 'ymin)
 		 for ymax = (getf bbox 'ymax)
 		 for xmax = (getf bbox 'xmax)
+		 until *abort*
 		 if (and (< -1 xmin xmax w) (< -1 ymin ymax h)) do
 		 ;; process the boundbox region and send for visualisation
 		   (trivial-channels:sendmsg (channel work) (process (opticl:crop-image (luminance work) ymin xmin ymax xmax) bbox))
@@ -150,11 +152,12 @@
 (defun train-from-annotations (&optional (spec *imagenet-annotations-root-set*))
   (setf *missing-count* 0
 	*processed-count* 0
-	*unreadable-count* 0)
+	*unreadable-count* 0
+	*abort* nil)
   (let ((annodirs (directory spec)))
-    (run-display (* 10 +pane-h+) (* 10 +pane-w+) (channel (make-instance 'work-instance)))
+    (run-display (* 10 +tile-w+) (* 10 +tile-h+) (channel (make-instance 'work-instance)))
     (loop repeat (get-number-of-processors)
-       do (funcall;;(bt:make-thread
+       do (bt:make-thread
 	   #'(lambda ()
 	       (let ((work (make-instance 'work-instance)))
 		 (loop for taskdir = (bt:with-lock-held (*queue-lock*)

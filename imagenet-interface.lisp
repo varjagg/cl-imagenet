@@ -44,7 +44,7 @@
 		     for src = (opticl:fit-image-into msg :y-max +tile-h+ :x-max +tile-w+)
 		     with quit = nil until quit 
 		     for xp = (* (random (floor width +tile-w+)) +tile-w+)
-		     for yp = (print (* (random (floor height +tile-h+)) +tile-h+)) do
+		     for yp = (* (random (floor height +tile-h+)) +tile-h+) do
 		       (opticl:with-image-bounds (h w) src
 			 (loop for i from 0 repeat h do
 			      (loop for j from 0 repeat w
@@ -81,6 +81,14 @@
   (opticl:trim-image
    (opticl:discrete-convolve img *edge-detect-kernel*) 1 1))
 
+(defun gray-threshold (img threshold)
+  (opticl:with-image-bounds (h w) img
+    (loop for i from 0 below h do
+	 (loop for j from 0 below w
+	    for val = (opticl:pixel img i j) do
+	      (setf (opticl:pixel img i j) (if (>= val threshold) 255 0)))))
+  img)
+
 (defclass work-instance ()
   ((anno-name :accessor anno-name :initarg :anno-name)
    (buffer :accessor buffer :initarg :buffer :initform nil)
@@ -90,8 +98,8 @@
    (channel :reader channel :allocation :class :initform (trivial-channels:make-channel))))
 
 (defun process (image bbox-annotation)
-  ;; edge-detect and process
-  (edge-detect-image image))
+  (gray-threshold image 120)
+  #+nil(edge-detect-image image))
 
 (defun read-imagenet-annotation-file (pathname)
   "Returns plist formed from parsing an annotation XML file"

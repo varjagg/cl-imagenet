@@ -1,3 +1,4 @@
 (defpackage #:cl-imagenet
   (:use #:cl)
-  (:nicknames #:imagenet))
+  (:nicknames #:imagenet)
+  (:export #:train-from-annotations))

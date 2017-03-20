@@ -71,6 +71,16 @@
 	     (xlib:free-gcontext gc)
 	     (xlib:close-display display))))))
 
+(defparameter *edge-detect-kernel*
+  (opticl::normalize-array #2A((0 1 0)
+			       (1 -4 1)
+			       (0 1 0))
+			   :element-type 'double-float))
+
+(defun edge-detect-image (img)
+  (opticl:trim-image
+   (opticl:discrete-convolve img *edge-detect-kernel*) 1 1))
+
 (defclass work-instance ()
   ((anno-name :accessor anno-name :initarg :anno-name)
    (buffer :accessor buffer :initarg :buffer :initform nil)
@@ -81,7 +91,7 @@
 
 (defun process (image bbox-annotation)
   ;; edge-detect and process
-  (opticl:edge-detect-image image))
+  (edge-detect-image image))
 
 (defun read-imagenet-annotation-file (pathname)
   "Returns plist formed from parsing an annotation XML file"
@@ -155,7 +165,7 @@
 	*unreadable-count* 0
 	*abort* nil)
   (let ((annodirs (directory spec)))
-    (run-display (* 10 +tile-w+) (* 10 +tile-h+) (channel (make-instance 'work-instance)))
+    (run-display (* 12 +tile-w+) (* 12 +tile-h+) (channel (make-instance 'work-instance)))
     (loop repeat (get-number-of-processors)
        do (bt:make-thread
 	   #'(lambda ()

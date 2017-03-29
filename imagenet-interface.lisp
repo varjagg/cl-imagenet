@@ -95,10 +95,11 @@
    (jpeg-descriptor :accessor jpeg-descriptor :initform (jpeg::make-descriptor))
    (luminance :accessor luminance :type opticl:8-bit-gray-image)
    (anno-plist :accessor anno-plist)
+   (image-root :allocation :class :reader image-root :initarg :image-root)
    (channel :reader channel :allocation :class :initform (trivial-channels:make-channel))))
 
 (defun process (image bbox-annotation)
-  (gray-threshold image 120)
+  (gray-threshold image 150)
   #+nil(edge-detect-image image))
 
 (defun read-imagenet-annotation-file (pathname)
@@ -124,7 +125,7 @@
   (array-dimension array 1))
 
 (defmethod process-image ((work work-instance))
-  (let* ((image-pathname (make-pathname :directory `(:absolute ,*imagenet-image-root* ,(getf (anno-plist work) 'folder))
+  (let* ((image-pathname (make-pathname :directory `(:absolute ,(image-root work) ,(getf (anno-plist work) 'folder))
 					:name (getf (anno-plist work) 'filename) :type "JPEG")))
     (if (probe-file image-pathname)
 	(handler-case 
@@ -167,17 +168,17 @@
   (setf (anno-plist work) (read-imagenet-annotation-file (anno-name work)))
   (process-image work))
 
-(defun train-from-annotations (&optional (spec *imagenet-annotations-root-set*))
+(defun train-from-annotations (&key (annotations *imagenet-annotations-root-set*) (root *imagenet-image-root*))
   (setf *missing-count* 0
 	*processed-count* 0
 	*unreadable-count* 0
 	*abort* nil)
-  (let ((annodirs (directory spec)))
+  (let ((annodirs (directory annotations)))
     (run-display (* 12 +tile-w+) (* 12 +tile-h+) (channel (make-instance 'work-instance)))
     (loop repeat (get-number-of-processors)
        do (bt:make-thread
 	   #'(lambda ()
-	       (let ((work (make-instance 'work-instance)))
+	       (let ((work (make-instance 'work-instance :image-root root)))
 		 (loop for taskdir = (bt:with-lock-held (*queue-lock*)
 				       (pop annodirs))
 		    for taskfiles = '()
